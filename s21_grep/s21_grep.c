@@ -2,6 +2,7 @@
 #include "s21_grep.h"
 
 #include <getopt.h>
+#include <regex.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,9 +10,23 @@ int main(int argc, char **argv) {
     arg_t opt = {0};
     templates_t templates;
     templates.capacity = 2;
-    templates.data = malloc(sizeof(char) * templates.capacity);  // sizeof(char*)
+    templates.data = malloc(sizeof(char*) * templates.capacity); 
+    if (templates.data == NULL) {
+        printf("Не получилось выделить память");
+    } else {
+        parse_arguments(argc, argv, &opt, &templates);
+        printf("%s\n", templates.data[0]);
+        if (!opt.error) {
 
-    parse_arguments(argc, argv, &opt, &templates);
+        }
+        if (templates.data != NULL) {
+            for (size_t i = 0; i < templates.size; ++i) {
+                free(templates.data[i]);
+            }
+        }
+        free(templates.data);
+    }
+
 
     return 0;
 }
@@ -63,7 +78,6 @@ void arg_i(char* line, char* word, int* empty_line) {
 #endif
 
 void parse_arguments(int argc, char **argv, arg_t *opt, templates_t *templates) {
-    (void)templates;
     const char *short_options = "e:ivclnhsf:o";
     int tmp_opt = 0;
 
@@ -71,7 +85,7 @@ void parse_arguments(int argc, char **argv, arg_t *opt, templates_t *templates) 
         switch (tmp_opt) {
             case 'e':
                 opt->e = 1;
-                // pars_for_e(templates);
+                pars_for_e(templates, opt);
                 break;
             case 'i':
                 opt->i = 1;
@@ -107,3 +121,33 @@ void parse_arguments(int argc, char **argv, arg_t *opt, templates_t *templates) 
         }
     }
 }
+
+void get_memory(templates_t* templates, arg_t* opt) {
+    if (templates->size + 1 == templates->capacity) {
+        templates->capacity *= 2;
+        char** tmp = malloc(sizeof(char*) * templates->capacity);
+        if (tmp == NULL) {
+            opt->error = 1;
+        } else {
+            for (size_t i = 0; i < templates->size; ++i) {
+                tmp[i] = templates->data[i];
+            }
+            free(templates->data);
+            templates->data = tmp;
+        }
+    }
+}
+
+void pars_for_e(templates_t* templates, arg_t* opt) {
+    get_memory(templates, opt);
+    int length = strlen(optarg);
+    templates->data = calloc(length + 1, sizeof(char));
+    if (templates->data == NULL) {
+        opt-> error = 1;
+    } else {
+        strcpy(templates->data[templates->size++], optarg);
+        
+    }
+     
+}
+
